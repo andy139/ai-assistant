@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Assistant Orchestrator</title>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --border: #2a2a3a;
+      --text: #e0e0e8;
+      --muted: #8888a0;
+      --accent: #6c5ce7;
+      --green: #00b894;
+      --red: #d63031;
+      --yellow: #fdcb6e;
+      --blue: #0984e3;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .container { max-width: 960px; margin: 0 auto; padding: 24px; }
+    h1 { font-size: 1.4rem; margin-bottom: 8px; color: var(--accent); }
+    h2 { font-size: 1rem; color: var(--muted); margin: 24px 0 12px; text-transform: uppercase; letter-spacing: 1px; }
+    .subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 24px; }
+
+    /* Command input */
+    .input-row { display: flex; gap: 8px; margin-bottom: 24px; }
+    .input-row input {
+      flex: 1; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); font-family: inherit; font-size: 0.9rem;
+    }
+    .input-row input:focus { outline: none; border-color: var(--accent); }
+    .btn {
+      padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;
+      font-family: inherit; font-size: 0.85rem; font-weight: 600;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-confirm { background: var(--green); color: #fff; font-size: 0.75rem; padding: 4px 10px; }
+    .btn-deny { background: var(--red); color: #fff; font-size: 0.75rem; padding: 4px 10px; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+    .tab {
+      padding: 8px 16px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 6px 6px 0 0; cursor: pointer; color: var(--muted); font-size: 0.85rem;
+    }
+    .tab.active { background: var(--border); color: var(--text); }
+
+    /* Cards */
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      padding: 14px 18px; margin-bottom: 10px;
+    }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .card-title { font-size: 0.9rem; font-weight: 600; }
+    .badge {
+      font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 600;
+    }
+    .badge-executed { background: var(--green); color: #000; }
+    .badge-pending { background: var(--yellow); color: #000; }
+    .badge-failed { background: var(--red); color: #fff; }
+    .badge-dry_run { background: var(--blue); color: #fff; }
+    .badge-denied { background: var(--muted); color: #fff; }
+    .card-meta { font-size: 0.75rem; color: var(--muted); }
+    .card-actions { display: flex; gap: 6px; margin-top: 8px; }
+
+    .result-box {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+      padding: 12px; margin-bottom: 16px; white-space: pre-wrap; font-size: 0.8rem;
+      max-height: 300px; overflow-y: auto;
+    }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .empty { color: var(--muted); text-align: center; padding: 40px; font-size: 0.85rem; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>AI Assistant Orchestrator</h1>
+    <p class="subtitle">LLM-planned automation with secure execution</p>
+
+    <div class="input-row">
+      <input type="text" id="cmdInput" placeholder="Type a command... e.g. 'plan my day'" autofocus />
+      <button class="btn btn-primary" id="sendBtn" onclick="sendCommand()">Send</button>
+    </div>
+
+    <div id="resultBox" class="result-box" style="display:none;"></div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="history" onclick="switchTab('history')">History</div>
+      <div class="tab" data-tab="pending" onclick="switchTab('pending')">Pending</div>
+      <div class="tab" data-tab="reminders" onclick="switchTab('reminders')">Reminders</div>
+    </div>
+
+    <div id="history" class="section active"></div>
+    <div id="pending" class="section"></div>
+    <div id="reminders" class="section"></div>
+  </div>
+
+  <script>
+    const API = '';
+
+    function switchTab(name) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+      document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === name));
+      if (name === 'history') loadHistory();
+      if (name === 'pending') loadPending();
+      if (name === 'reminders') loadHistory();
+    }
+
+    async function sendCommand() {
+      const input = document.getElementById('cmdInput');
+      const msg = input.value.trim();
+      if (!msg) return;
+
+      const btn = document.getElementById('sendBtn');
+      btn.innerHTML = '<span class="spinner"></span>';
+      btn.disabled = true;
+
+      const box = document.getElementById('resultBox');
+      box.style.display = 'block';
+      box.textContent = 'Processing...';
+
+      try {
+        const res = await fetch(API + '/command', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg }),
+        });
+        const data = await res.json();
+        box.textContent = JSON.stringify(data, null, 2);
+        input.value = '';
+        loadHistory();
+        loadPending();
+      } catch (err) {
+        box.textContent = 'Error: ' + err.message;
+      } finally {
+        btn.innerHTML = 'Send';
+        btn.disabled = false;
+      }
+    }
+
+    async function loadHistory() {
+      const el = document.getElementById('history');
+      try {
+        const res = await fetch(API + '/history?limit=30');
+        const data = await res.json();
+        if (!data.commands.length) {
+          el.innerHTML = '<div class="empty">No commands yet. Send one above.</div>';
+          return;
+        }
+        el.innerHTML = data.commands.map(cmd => `
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">${esc(cmd.message.slice(0, 80))}</span>
+              <span class="badge badge-${cmd.status}">${cmd.status}</span>
+            </div>
+            <div class="card-meta">${cmd.source} &middot; ${new Date(cmd.createdAt).toLocaleString()}</div>
+            ${cmd.actions.map(a => `
+              <div style="margin-top:6px;padding-left:12px;border-left:2px solid var(--border)">
+                <span style="font-size:0.8rem">${esc(a.type)}</span>
+                <span class="badge badge-${a.status}" style="margin-left:6px">${a.status}</span>
+                ${a.error ? `<div style="color:var(--red);font-size:0.75rem">${esc(a.error)}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        `).join('');
+      } catch (err) {
+        el.innerHTML = '<div class="empty">Failed to load history</div>';
+      }
+    }
+
+    async function loadPending() {
+      const el = document.getElementById('pending');
+      try {
+        const res = await fetch(API + '/confirm/pending');
+        const data = await res.json();
+        if (!data.pending.length) {
+          el.innerHTML = '<div class="empty">No actions pending confirmation.</div>';
+          return;
+        }
+        el.innerHTML = data.pending.map(a => `
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">${esc(a.type)}</span>
+              <span class="badge badge-pending">needs confirm</span>
+            </div>
+            <div class="card-meta">${esc(a.commandMessage)} &middot; ${new Date(a.createdAt).toLocaleString()}</div>
+            <div style="font-size:0.8rem;margin-top:6px;color:var(--muted)">${esc(JSON.stringify(a.args))}</div>
+            <div class="card-actions">
+              <button class="btn btn-confirm" onclick="resolve('${a.id}','confirm')">Confirm</button>
+              <button class="btn btn-deny" onclick="resolve('${a.id}','deny')">Deny</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        el.innerHTML = '<div class="empty">Failed to load pending actions</div>';
+      }
+    }
+
+    async function resolve(id, decision) {
+      try {
+        await fetch(API + '/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, decision }),
+        });
+        loadPending();
+        loadHistory();
+      } catch (err) {
+        alert('Failed: ' + err.message);
+      }
+    }
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    document.getElementById('cmdInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') sendCommand();
+    });
+
+    loadHistory();
+  </script>
+</body>
+</html>
