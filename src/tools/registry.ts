@@ -5,12 +5,20 @@ import { discordPostSchema } from "./schemas/discord.js";
 import { smsReplySchema } from "./schemas/sms.js";
 import { historyQuerySchema } from "./schemas/history.js";
 import { agentDelegateSchema } from "./schemas/agentDelegate.js";
+import { weatherCurrentSchema } from "./schemas/weather.js";
+import { notesCreateSchema, notesSearchSchema, notesListSchema } from "./schemas/notes.js";
+import { bookmarksSaveSchema, bookmarksListSchema } from "./schemas/bookmarks.js";
+import { briefingGetSchema } from "./schemas/briefing.js";
 import { tasksCreate, tasksList } from "./implementations/tasks.js";
 import { remindersCreate } from "./implementations/reminders.js";
 import { discordPost } from "./implementations/discord.js";
 import { smsReply } from "./implementations/sms.js";
 import { historyQuery } from "./implementations/history.js";
 import { agentDelegate } from "./implementations/agentDelegate.js";
+import { weatherCurrent } from "./implementations/weather.js";
+import { notesCreate, notesSearch, notesList } from "./implementations/notes.js";
+import { bookmarksSave, bookmarksList } from "./implementations/bookmarks.js";
+import { briefingGet } from "./implementations/briefing.js";
 
 export interface ToolResult {
   ok: boolean;
@@ -99,6 +107,71 @@ register({
   confirmation: "soft",
   schema: agentDelegateSchema,
   execute: (args) => agentDelegate(args as Parameters<typeof agentDelegate>[0]),
+});
+
+// --- Quick-win tools ---
+
+register({
+  name: "weather.current",
+  description: "Get current weather for a location",
+  permission: "read",
+  confirmation: "none",
+  schema: weatherCurrentSchema,
+  execute: (args) => weatherCurrent(args as Parameters<typeof weatherCurrent>[0]),
+});
+
+register({
+  name: "notes.create",
+  description: "Save a quick note with optional tag",
+  permission: "write",
+  confirmation: "soft",
+  schema: notesCreateSchema,
+  execute: (args) => notesCreate(args as Parameters<typeof notesCreate>[0]),
+});
+
+register({
+  name: "notes.search",
+  description: "Search notes by keyword",
+  permission: "read",
+  confirmation: "none",
+  schema: notesSearchSchema,
+  execute: (args) => notesSearch(args as Parameters<typeof notesSearch>[0]),
+});
+
+register({
+  name: "notes.list",
+  description: "List recent notes, optionally filtered by tag",
+  permission: "read",
+  confirmation: "none",
+  schema: notesListSchema,
+  execute: (args) => notesList(args as Parameters<typeof notesList>[0]),
+});
+
+register({
+  name: "bookmarks.save",
+  description: "Save a URL bookmark with optional title and tag",
+  permission: "write",
+  confirmation: "soft",
+  schema: bookmarksSaveSchema,
+  execute: (args) => bookmarksSave(args as Parameters<typeof bookmarksSave>[0]),
+});
+
+register({
+  name: "bookmarks.list",
+  description: "List saved bookmarks, optionally filtered by tag",
+  permission: "read",
+  confirmation: "none",
+  schema: bookmarksListSchema,
+  execute: (args) => bookmarksList(args as Parameters<typeof bookmarksList>[0]),
+});
+
+register({
+  name: "briefing.get",
+  description: "Get a daily briefing with open tasks, upcoming reminders, and optional weather",
+  permission: "read",
+  confirmation: "none",
+  schema: briefingGetSchema,
+  execute: (args) => briefingGet(args as Parameters<typeof briefingGet>[0]),
 });
 
 // --- Registry accessors ---

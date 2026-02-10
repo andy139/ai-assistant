@@ -55,3 +55,23 @@ model Reminder {
   result    String?
   createdAt DateTime @default(now())
 }
+
+model Note {
+  id        String   @id @default(uuid())
+  content   String
+  tag       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tag])
+}
+
+model Bookmark {
+  id        String   @id @default(uuid())
+  url       String
+  title     String?
+  tag       String?
+  createdAt DateTime @default(now())
+
+  @@index([tag])
+}
