@@ -9,6 +9,7 @@ import { weatherCurrentSchema } from "./schemas/weather.js";
 import { notesCreateSchema, notesSearchSchema, notesListSchema } from "./schemas/notes.js";
 import { bookmarksSaveSchema, bookmarksListSchema } from "./schemas/bookmarks.js";
 import { briefingGetSchema } from "./schemas/briefing.js";
+import { webSearchSchema } from "./schemas/web.js";
 import { tasksCreate, tasksList } from "./implementations/tasks.js";
 import { remindersCreate } from "./implementations/reminders.js";
 import { discordPost } from "./implementations/discord.js";
@@ -19,6 +20,7 @@ import { weatherCurrent } from "./implementations/weather.js";
 import { notesCreate, notesSearch, notesList } from "./implementations/notes.js";
 import { bookmarksSave, bookmarksList } from "./implementations/bookmarks.js";
 import { briefingGet } from "./implementations/briefing.js";
+import { webSearch } from "./implementations/web.js";
 
 export interface ToolResult {
   ok: boolean;
@@ -172,6 +174,15 @@ register({
   confirmation: "none",
   schema: briefingGetSchema,
   execute: (args) => briefingGet(args as Parameters<typeof briefingGet>[0]),
+});
+
+register({
+  name: "web.search",
+  description: "Search the web using Brave Search",
+  permission: "read",
+  confirmation: "none",
+  schema: webSearchSchema,
+  execute: (args) => webSearch(args as Parameters<typeof webSearch>[0]),
 });
 
 // --- Registry accessors ---

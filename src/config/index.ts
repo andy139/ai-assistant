@@ -36,5 +36,9 @@ export const config = {
     phoneNumber: process.env.TWILIO_PHONE_NUMBER || "",
   },
 
+  brave: {
+    apiKey: process.env.BRAVE_SEARCH_API_KEY || "",
+  },
+
   publicBaseUrl: process.env.PUBLIC_BASE_URL || "",
 } as const;

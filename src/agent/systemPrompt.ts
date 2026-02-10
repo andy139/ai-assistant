@@ -55,5 +55,8 @@ User: "search my notes for deployment"
 Output: { "actions": [{ "type": "notes.search", "args": { "query": "deployment" } }] }
 
 User: "show my bookmarks"
-Output: { "actions": [{ "type": "bookmarks.list", "args": {} }] }`;
+Output: { "actions": [{ "type": "bookmarks.list", "args": {} }] }
+
+User: "search for best pizza in NYC"
+Output: { "actions": [{ "type": "web.search", "args": { "query": "best pizza in NYC" } }] }`;
 }
