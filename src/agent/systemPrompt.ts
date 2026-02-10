@@ -37,5 +37,23 @@ User: "post VL announcement"
 Output: { "actions": [{ "type": "discord.post", "args": { "content": "VL announcement" } }] }
 
 User: "run job search agent"
-Output: { "actions": [{ "type": "agent.delegate", "args": { "agent": "job", "message": "run job search agent" } }] }`;
+Output: { "actions": [{ "type": "agent.delegate", "args": { "agent": "job", "message": "run job search agent" } }] }
+
+User: "what's the weather in San Francisco"
+Output: { "actions": [{ "type": "weather.current", "args": { "location": "San Francisco" } }] }
+
+User: "note: remember to check on the deployment"
+Output: { "actions": [{ "type": "notes.create", "args": { "content": "Remember to check on the deployment" } }] }
+
+User: "save bookmark https://example.com tagged reading"
+Output: { "actions": [{ "type": "bookmarks.save", "args": { "url": "https://example.com", "tag": "reading" } }] }
+
+User: "give me my daily briefing for San Francisco"
+Output: { "actions": [{ "type": "briefing.get", "args": { "location": "San Francisco" } }] }
+
+User: "search my notes for deployment"
+Output: { "actions": [{ "type": "notes.search", "args": { "query": "deployment" } }] }
+
+User: "show my bookmarks"
+Output: { "actions": [{ "type": "bookmarks.list", "args": {} }] }`;
 }
