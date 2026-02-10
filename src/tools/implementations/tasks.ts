@@ -1,5 +1,5 @@
 import { db } from "../../store/db.js";
-import type { TasksCreateArgs, TasksListArgs } from "../schemas/tasks.js";
+import type { TasksCreateArgs, TasksListArgs, TasksCompleteArgs, TasksDeleteArgs } from "../schemas/tasks.js";
 import type { ToolResult } from "../registry.js";
 
 export async function tasksCreate(args: TasksCreateArgs): Promise<ToolResult> {
@@ -35,4 +35,35 @@ export async function tasksList(args: TasksListArgs): Promise<ToolResult> {
     })),
     summary: `Found ${tasks.length} task(s)`,
   };
+}
+
+export async function tasksComplete(args: TasksCompleteArgs): Promise<ToolResult> {
+  try {
+    const task = await db.task.update({
+      where: { id: args.id },
+      data: { status: "done" },
+    });
+    return {
+      ok: true,
+      data: { id: task.id, title: task.title, status: task.status },
+      summary: `Completed task: "${task.title}"`,
+    };
+  } catch {
+    return { ok: false, data: null, summary: `Task not found: ${args.id}` };
+  }
+}
+
+export async function tasksDelete(args: TasksDeleteArgs): Promise<ToolResult> {
+  try {
+    const task = await db.task.delete({
+      where: { id: args.id },
+    });
+    return {
+      ok: true,
+      data: { id: task.id, title: task.title },
+      summary: `Deleted task: "${task.title}"`,
+    };
+  } catch {
+    return { ok: false, data: null, summary: `Task not found: ${args.id}` };
+  }
 }

@@ -1,6 +1,6 @@
 import type { ZodSchema } from "zod";
-import { tasksCreateSchema, tasksListSchema } from "./schemas/tasks.js";
-import { remindersCreateSchema } from "./schemas/reminders.js";
+import { tasksCreateSchema, tasksListSchema, tasksCompleteSchema, tasksDeleteSchema } from "./schemas/tasks.js";
+import { remindersCreateSchema, remindersListSchema } from "./schemas/reminders.js";
 import { discordPostSchema } from "./schemas/discord.js";
 import { smsReplySchema } from "./schemas/sms.js";
 import { historyQuerySchema } from "./schemas/history.js";
@@ -9,9 +9,9 @@ import { weatherCurrentSchema } from "./schemas/weather.js";
 import { notesCreateSchema, notesSearchSchema, notesListSchema } from "./schemas/notes.js";
 import { bookmarksSaveSchema, bookmarksListSchema } from "./schemas/bookmarks.js";
 import { briefingGetSchema } from "./schemas/briefing.js";
-import { webSearchSchema } from "./schemas/web.js";
-import { tasksCreate, tasksList } from "./implementations/tasks.js";
-import { remindersCreate } from "./implementations/reminders.js";
+import { webSearchSchema, webSummarizeSchema } from "./schemas/web.js";
+import { tasksCreate, tasksList, tasksComplete, tasksDelete } from "./implementations/tasks.js";
+import { remindersCreate, remindersList } from "./implementations/reminders.js";
 import { discordPost } from "./implementations/discord.js";
 import { smsReply } from "./implementations/sms.js";
 import { historyQuery } from "./implementations/history.js";
@@ -20,7 +20,7 @@ import { weatherCurrent } from "./implementations/weather.js";
 import { notesCreate, notesSearch, notesList } from "./implementations/notes.js";
 import { bookmarksSave, bookmarksList } from "./implementations/bookmarks.js";
 import { briefingGet } from "./implementations/briefing.js";
-import { webSearch } from "./implementations/web.js";
+import { webSearch, webSummarize } from "./implementations/web.js";
 
 export interface ToolResult {
   ok: boolean;
@@ -183,6 +183,42 @@ register({
   confirmation: "none",
   schema: webSearchSchema,
   execute: (args) => webSearch(args as Parameters<typeof webSearch>[0]),
+});
+
+register({
+  name: "web.summarize",
+  description: "Fetch a URL and summarize its content",
+  permission: "read",
+  confirmation: "none",
+  schema: webSummarizeSchema,
+  execute: (args) => webSummarize(args as Parameters<typeof webSummarize>[0]),
+});
+
+register({
+  name: "tasks.complete",
+  description: "Mark a task as done by its ID",
+  permission: "write",
+  confirmation: "soft",
+  schema: tasksCompleteSchema,
+  execute: (args) => tasksComplete(args as Parameters<typeof tasksComplete>[0]),
+});
+
+register({
+  name: "tasks.delete",
+  description: "Permanently delete a task by its ID",
+  permission: "write",
+  confirmation: "hard",
+  schema: tasksDeleteSchema,
+  execute: (args) => tasksDelete(args as Parameters<typeof tasksDelete>[0]),
+});
+
+register({
+  name: "reminders.list",
+  description: "List reminders, optionally filtered by status",
+  permission: "read",
+  confirmation: "none",
+  schema: remindersListSchema,
+  execute: (args) => remindersList(args as Parameters<typeof remindersList>[0]),
 });
 
 // --- Registry accessors ---

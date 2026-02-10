@@ -1,5 +1,6 @@
 import { config } from "../../config/index.js";
-import type { WebSearchArgs } from "../schemas/web.js";
+import { callClaude } from "../../agent/claudeClient.js";
+import type { WebSearchArgs, WebSummarizeArgs } from "../schemas/web.js";
 import type { ToolResult } from "../registry.js";
 
 interface BraveWebResult {
@@ -44,4 +45,35 @@ export async function webSearch(args: WebSearchArgs): Promise<ToolResult> {
     .join("\n");
 
   return { ok: true, data: results, summary };
+}
+
+const MAX_PAGE_CHARS = 10_000;
+
+export async function webSummarize(args: WebSummarizeArgs): Promise<ToolResult> {
+  let html: string;
+  try {
+    const res = await fetch(args.url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; AssistantBot/1.0)" },
+    });
+    if (!res.ok) {
+      return { ok: false, data: null, summary: `Failed to fetch URL: HTTP ${res.status}` };
+    }
+    html = await res.text();
+  } catch (err) {
+    return { ok: false, data: null, summary: `Failed to fetch URL: ${(err as Error).message}` };
+  }
+
+  // Strip HTML tags and truncate
+  const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, MAX_PAGE_CHARS);
+
+  if (!text) {
+    return { ok: false, data: null, summary: "Page returned no readable text content" };
+  }
+
+  const summary = await callClaude(
+    "You are a concise summarizer. Summarize the following web page content in a few paragraphs. Focus on the key points.",
+    text,
+  );
+
+  return { ok: true, data: { url: args.url, summary }, summary };
 }

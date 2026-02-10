@@ -58,5 +58,17 @@ User: "show my bookmarks"
 Output: { "actions": [{ "type": "bookmarks.list", "args": {} }] }
 
 User: "search for best pizza in NYC"
-Output: { "actions": [{ "type": "web.search", "args": { "query": "best pizza in NYC" } }] }`;
+Output: { "actions": [{ "type": "web.search", "args": { "query": "best pizza in NYC" } }] }
+
+User: "summarize https://example.com/article"
+Output: { "actions": [{ "type": "web.summarize", "args": { "url": "https://example.com/article" } }] }
+
+User: "mark task abc123 done"
+Output: { "actions": [{ "type": "tasks.complete", "args": { "id": "abc123" } }] }
+
+User: "delete task abc123"
+Output: { "actions": [{ "type": "tasks.delete", "args": { "id": "abc123" } }] }
+
+User: "show my reminders"
+Output: { "actions": [{ "type": "reminders.list", "args": {} }] }`;
 }
