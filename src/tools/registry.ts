@@ -1,6 +1,6 @@
 import type { ZodSchema } from "zod";
 import { tasksCreateSchema, tasksListSchema, tasksCompleteSchema, tasksDeleteSchema } from "./schemas/tasks.js";
-import { remindersCreateSchema, remindersListSchema } from "./schemas/reminders.js";
+import { remindersCreateSchema, remindersListSchema, remindersDeleteSchema } from "./schemas/reminders.js";
 import { discordPostSchema } from "./schemas/discord.js";
 import { smsReplySchema } from "./schemas/sms.js";
 import { historyQuerySchema } from "./schemas/history.js";
@@ -10,8 +10,11 @@ import { notesCreateSchema, notesSearchSchema, notesListSchema } from "./schemas
 import { bookmarksSaveSchema, bookmarksListSchema } from "./schemas/bookmarks.js";
 import { briefingGetSchema } from "./schemas/briefing.js";
 import { webSearchSchema, webSummarizeSchema } from "./schemas/web.js";
+import { telegramReplySchema } from "./schemas/telegram.js";
+import { assistantReplySchema } from "./schemas/assistant.js";
+import { emailListSchema, emailReadSchema, emailSummarizeSchema, emailSendSchema, emailArchiveSchema } from "./schemas/email.js";
 import { tasksCreate, tasksList, tasksComplete, tasksDelete } from "./implementations/tasks.js";
-import { remindersCreate, remindersList } from "./implementations/reminders.js";
+import { remindersCreate, remindersList, remindersDelete } from "./implementations/reminders.js";
 import { discordPost } from "./implementations/discord.js";
 import { smsReply } from "./implementations/sms.js";
 import { historyQuery } from "./implementations/history.js";
@@ -21,6 +24,9 @@ import { notesCreate, notesSearch, notesList } from "./implementations/notes.js"
 import { bookmarksSave, bookmarksList } from "./implementations/bookmarks.js";
 import { briefingGet } from "./implementations/briefing.js";
 import { webSearch, webSummarize } from "./implementations/web.js";
+import { telegramReply } from "./implementations/telegram.js";
+import { assistantReply } from "./implementations/assistant.js";
+import { emailList, emailRead, emailSummarize, emailSend, emailArchive } from "./implementations/email.js";
 
 export interface ToolResult {
   ok: boolean;
@@ -213,12 +219,86 @@ register({
 });
 
 register({
+  name: "reminders.delete",
+  description: "Delete a reminder by its ID",
+  permission: "write",
+  confirmation: "soft",
+  schema: remindersDeleteSchema,
+  execute: (args) => remindersDelete(args as Parameters<typeof remindersDelete>[0]),
+});
+
+register({
   name: "reminders.list",
   description: "List reminders, optionally filtered by status",
   permission: "read",
   confirmation: "none",
   schema: remindersListSchema,
   execute: (args) => remindersList(args as Parameters<typeof remindersList>[0]),
+});
+
+register({
+  name: "telegram.reply",
+  description: "Send a Telegram message to a chat",
+  permission: "write",
+  confirmation: "none",
+  schema: telegramReplySchema,
+  execute: (args) => telegramReply(args as Parameters<typeof telegramReply>[0]),
+});
+
+register({
+  name: "assistant.reply",
+  description: "Reply to the user with a conversational message (use for greetings, questions, help requests, or anything that doesn't need a tool)",
+  permission: "read",
+  confirmation: "none",
+  schema: assistantReplySchema,
+  execute: (args) => assistantReply(args as Parameters<typeof assistantReply>[0]),
+});
+
+// --- Email tools ---
+
+register({
+  name: "email.list",
+  description: "List emails, optionally filtered by sender, subject, label, or unread status",
+  permission: "read",
+  confirmation: "none",
+  schema: emailListSchema,
+  execute: (args) => emailList(args as Parameters<typeof emailList>[0]),
+});
+
+register({
+  name: "email.read",
+  description: "Read the full body of an email by its Gmail message ID",
+  permission: "read",
+  confirmation: "none",
+  schema: emailReadSchema,
+  execute: (args) => emailRead(args as Parameters<typeof emailRead>[0]),
+});
+
+register({
+  name: "email.summarize",
+  description: "AI-powered summary of recent unread emails with action items highlighted",
+  permission: "read",
+  confirmation: "none",
+  schema: emailSummarizeSchema,
+  execute: (args) => emailSummarize(args as Parameters<typeof emailSummarize>[0]),
+});
+
+register({
+  name: "email.send",
+  description: "Compose and send an email via Gmail",
+  permission: "write",
+  confirmation: "hard",
+  schema: emailSendSchema,
+  execute: (args) => emailSend(args as Parameters<typeof emailSend>[0]),
+});
+
+register({
+  name: "email.archive",
+  description: "Archive an email (remove from Inbox, keeps in All Mail)",
+  permission: "write",
+  confirmation: "soft",
+  schema: emailArchiveSchema,
+  execute: (args) => emailArchive(args as Parameters<typeof emailArchive>[0]),
 });
 
 // --- Registry accessors ---

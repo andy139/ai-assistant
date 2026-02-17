@@ -1,11 +1,16 @@
 import { getToolNames, getAllTools } from "../tools/registry.js";
 
 export function buildPlannerPrompt(): string {
+  // Fields injected internally by the executor — hide from planner
+  const internalFields = new Set(["source", "chatId"]);
+
   const toolDescriptions = getAllTools()
     .map((t) => {
       const fields = Object.entries(
         (t.schema as { shape?: Record<string, unknown> }).shape ?? {},
-      ).map(([k]) => k);
+      )
+        .map(([k]) => k)
+        .filter((k) => !internalFields.has(k));
       return `  - ${t.name} (${t.permission}, confirm: ${t.confirmation}): ${t.description}. Fields: ${fields.join(", ") || "none"}`;
     })
     .join("\n");
@@ -70,5 +75,47 @@ User: "delete task abc123"
 Output: { "actions": [{ "type": "tasks.delete", "args": { "id": "abc123" } }] }
 
 User: "show my reminders"
-Output: { "actions": [{ "type": "reminders.list", "args": {} }] }`;
+Output: { "actions": [{ "type": "reminders.list", "args": {} }] }
+
+User: "delete the stretch reminder"
+Output: { "actions": [{ "type": "reminders.delete", "args": { "text": "stretch" } }] }
+
+User: "remove all my reminders about gym"
+Output: { "actions": [{ "type": "reminders.delete", "args": { "text": "gym" } }] }
+
+User: "delete all my reminders"
+Output: { "actions": [{ "type": "reminders.delete", "args": { "all": true } }] }
+
+User: "clear all reminders"
+Output: { "actions": [{ "type": "reminders.delete", "args": { "all": true } }] }
+
+User: "show my unread emails"
+Output: { "actions": [{ "type": "email.list", "args": { "unreadOnly": true } }] }
+
+User: "any emails from recruiter@company.com"
+Output: { "actions": [{ "type": "email.list", "args": { "from": "recruiter@company.com" } }] }
+
+User: "read email 18e3a4b5c6d7e8f9"
+Output: { "actions": [{ "type": "email.read", "args": { "id": "18e3a4b5c6d7e8f9" } }] }
+
+User: "summarize my inbox"
+Output: { "actions": [{ "type": "email.summarize", "args": {} }] }
+
+User: "send email to bob@example.com subject Meeting body Can we meet Thursday at 2pm?"
+Output: { "actions": [{ "type": "email.send", "args": { "to": "bob@example.com", "subject": "Meeting", "body": "Can we meet Thursday at 2pm?" } }] }
+
+User: "archive email 18e3a4b5c6d7e8f9"
+Output: { "actions": [{ "type": "email.archive", "args": { "id": "18e3a4b5c6d7e8f9" } }] }
+
+User: "check my job emails"
+Output: { "actions": [{ "type": "agent.delegate", "args": { "agent": "job", "message": "check my job emails" } }] }
+
+User: "hello"
+Output: { "actions": [{ "type": "assistant.reply", "args": { "text": "Hey! I'm your AI assistant. I can manage tasks, reminders, notes, bookmarks, search the web, check weather, and more. What can I help with?" } }] }
+
+User: "what can you do?"
+Output: { "actions": [{ "type": "assistant.reply", "args": { "text": "Here's what I can do:\\n- Create and manage tasks\\n- Set reminders\\n- Save and search notes\\n- Bookmark URLs\\n- Search the web\\n- Summarize web pages\\n- Check the weather\\n- Get a daily briefing\\n- Post to Discord\\nJust tell me what you need!" } }] }
+
+User: "thanks that worked"
+Output: { "actions": [{ "type": "assistant.reply", "args": { "text": "Glad it worked! Let me know if you need anything else." } }] }`;
 }

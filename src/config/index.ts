@@ -40,5 +40,15 @@ export const config = {
     apiKey: process.env.BRAVE_SEARCH_API_KEY || "",
   },
 
+  telegram: {
+    botToken: process.env.TELEGRAM_BOT_TOKEN || "",
+  },
+
+  gmail: {
+    clientId: process.env.GMAIL_CLIENT_ID || "",
+    clientSecret: process.env.GMAIL_CLIENT_SECRET || "",
+    refreshToken: process.env.GMAIL_REFRESH_TOKEN || "",
+  },
+
   publicBaseUrl: process.env.PUBLIC_BASE_URL || "",
 } as const;
