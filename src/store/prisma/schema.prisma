@@ -53,6 +53,8 @@ model Reminder {
   runAt     DateTime
   fired     Boolean  @default(false)
   result    String?
+  source    String?  // "telegram" | "sms" | etc.
+  chatId    String?  // telegram chat ID or phone number
   createdAt DateTime @default(now())
 }
 

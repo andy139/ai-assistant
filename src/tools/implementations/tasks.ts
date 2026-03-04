@@ -25,6 +25,14 @@ export async function tasksList(args: TasksListArgs): Promise<ToolResult> {
     take: args.limit ?? 20,
   });
 
+  const lines = tasks.map((t) => {
+    const icon = t.status === "done" ? "\u2705" : "\u25FB\uFE0F";
+    const due = t.dueAt
+      ? "\n   Due: " + t.dueAt.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+      : "";
+    return `${icon} ${t.title}${due}`;
+  });
+
   return {
     ok: true,
     data: tasks.map((t) => ({
@@ -33,7 +41,9 @@ export async function tasksList(args: TasksListArgs): Promise<ToolResult> {
       status: t.status,
       dueAt: t.dueAt?.toISOString() ?? null,
     })),
-    summary: `Found ${tasks.length} task(s)`,
+    summary: tasks.length
+      ? `Tasks:\n\n${lines.join("\n\n")}`
+      : "No tasks found",
   };
 }
 

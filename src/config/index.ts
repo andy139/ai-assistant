@@ -28,12 +28,15 @@ export const config = {
 
   discord: {
     webhookUrl: process.env.DISCORD_WEBHOOK_URL || "",
+    botToken: process.env.DISCORD_BOT_TOKEN || "",
+    userId: process.env.DISCORD_USER_ID || "",
   },
 
   twilio: {
     accountSid: process.env.TWILIO_ACCOUNT_SID || "",
     authToken: process.env.TWILIO_AUTH_TOKEN || "",
     phoneNumber: process.env.TWILIO_PHONE_NUMBER || "",
+    messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID || "",
   },
 
   brave: {

@@ -13,6 +13,42 @@ export async function getPendingConfirmations() {
 }
 
 /**
+ * Get the most recent pending confirmation action.
+ */
+export async function getLatestPendingConfirmation() {
+  return db.action.findFirst({
+    where: { status: "pending_confirm" },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+/**
+ * Resolve all pending confirmations at once.
+ * Returns the list of resolved actions.
+ */
+export async function resolveAllPending(decision: "confirm" | "deny") {
+  const pending = await db.action.findMany({
+    where: { status: "pending_confirm" },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const newStatus = decision === "confirm" ? "confirmed" : "denied";
+
+  for (const action of pending) {
+    await db.action.update({
+      where: { id: action.id },
+      data: { status: newStatus },
+    });
+  }
+
+  if (pending.length) {
+    logger.info("All confirmations resolved", { decision, count: pending.length });
+  }
+
+  return pending;
+}
+
+/**
  * Confirm or deny a pending action by ID.
  * Returns the updated action, or null if not found / not pending.
  */

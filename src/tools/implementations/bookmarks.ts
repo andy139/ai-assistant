@@ -25,6 +25,12 @@ export async function bookmarksList(args: BookmarksListArgs): Promise<ToolResult
     take: args.limit ?? 20,
   });
 
+  const lines = bookmarks.map((b) => {
+    const tag = b.tag ? ` [${b.tag}]` : "";
+    const title = b.title ? `${b.title}${tag}\n   ${b.url}` : `${b.url}${tag}`;
+    return `\uD83D\uDD17 ${title}`;
+  });
+
   return {
     ok: true,
     data: bookmarks.map((b) => ({
@@ -34,6 +40,8 @@ export async function bookmarksList(args: BookmarksListArgs): Promise<ToolResult
       tag: b.tag,
       createdAt: b.createdAt.toISOString(),
     })),
-    summary: `Found ${bookmarks.length} bookmark(s)${args.tag ? ` tagged [${args.tag}]` : ""}`,
+    summary: bookmarks.length
+      ? `Bookmarks:\n\n${lines.join("\n\n")}`
+      : `No bookmarks found${args.tag ? ` tagged [${args.tag}]` : ""}`,
   };
 }

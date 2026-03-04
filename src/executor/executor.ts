@@ -6,11 +6,13 @@ import { getTool } from "../tools/registry.js";
 import { logger } from "../utils/logger.js";
 import type { PlannerAction } from "../agent/planner.js";
 import type { ToolResult } from "../tools/registry.js";
+import type { ConversationTurn } from "../agent/conversationHistory.js";
 
 export interface ActionResult {
   actionId: string;
   type: string;
   status: string;
+  args?: Record<string, unknown>;
   result?: ToolResult;
   error?: string;
 }
@@ -33,8 +35,9 @@ export interface CommandResult {
  */
 export async function executeCommand(
   message: string,
-  source: "sms" | "http" | "cli" | "phone",
+  source: "sms" | "http" | "cli" | "phone" | "telegram" | "discord",
   from?: string,
+  history: ConversationTurn[] = [],
 ): Promise<CommandResult> {
   // 1. Persist command
   const command = await db.command.create({
@@ -47,7 +50,7 @@ export async function executeCommand(
   try {
     // 2. Plan
     await db.command.update({ where: { id: command.id }, data: { status: "planned" } });
-    const planResult = await plan(message);
+    const planResult = await plan(message, history);
     await db.command.update({
       where: { id: command.id },
       data: { planJson: JSON.stringify(planResult.actions) },
@@ -74,6 +77,14 @@ export async function executeCommand(
     await db.command.update({ where: { id: command.id }, data: { status: "executing" } });
 
     for (const validAction of valid) {
+      // Inject source/chatId into reminder creates so the scheduler knows where to notify
+      if (validAction.type === "reminders.create") {
+        const args = validAction.validatedArgs as Record<string, unknown>;
+        args.source = source;
+        args.chatId = from ?? undefined;
+        validAction.args = { ...validAction.args as Record<string, unknown>, source, chatId: from };
+      }
+
       const tool = getTool(validAction.type)!;
 
       // Persist the action
@@ -112,6 +123,7 @@ export async function executeCommand(
           actionId: action.id,
           type: validAction.type,
           status: "pending_confirm",
+          args: validAction.args,
         });
         logger.info("Action queued for confirmation", {
           actionId: action.id,
@@ -265,6 +277,22 @@ async function processDelegatedActions(
   }
 }
 
+function describePendingAction(a: ActionResult): string {
+  const args = a.args ?? {};
+  switch (a.type) {
+    case "reminders.create":
+      return `Reminder: ${args.text ?? "?"}${args.runAt ? ` at ${new Date(args.runAt as string).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}` : ""}`;
+    case "tasks.delete":
+      return `Delete task: ${args.id ?? "?"}`;
+    case "discord.post":
+      return `Post to Discord: ${(args.content as string)?.slice(0, 80) ?? "?"}`;
+    default: {
+      const name = a.type.split(".").pop() ?? a.type;
+      return name;
+    }
+  }
+}
+
 function buildSummary(actions: ActionResult[], errors: string[]): string {
   const parts: string[] = [];
 
@@ -279,9 +307,10 @@ function buildSummary(actions: ActionResult[], errors: string[]): string {
     );
   }
   if (pending.length) {
-    parts.push(
-      `Needs confirm: ${pending.map((a) => `${a.type} (${a.actionId.slice(0, 8)})`).join(", ")}`,
-    );
+    const descriptions = pending.map((a) => {
+      return `  \u2022 ${describePendingAction(a)}`;
+    });
+    parts.push(`Waiting for your OK:\n${descriptions.join("\n")}\n\nReply "yes" to confirm${pending.length > 1 ? ', "yes all" for all' : ""}, or "no" to cancel.`);
   }
   if (dryRun.length) {
     parts.push(`[DRY RUN] ${dryRun.length} action(s) logged`);
@@ -290,7 +319,7 @@ function buildSummary(actions: ActionResult[], errors: string[]): string {
     parts.push(`Errors: ${failed.length + errors.length}`);
   }
 
-  return parts.join(" | ") || "No actions taken";
+  return parts.join("\n\n") || "No actions taken";
 }
 
 /**

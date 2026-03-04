@@ -9,6 +9,8 @@ import { confirmRouter } from "./api/confirmRoutes.js";
 import { phoneRouter } from "./api/phoneRoutes.js";
 import { uiRouter } from "./ui/uiRoutes.js";
 import { startScheduler } from "./scheduler/scheduler.js";
+import { startTelegramBot } from "./telegram/bot.js";
+import { startDiscordBot } from "./discord/bot.js";
 import { logger } from "./utils/logger.js";
 import { AppError } from "./utils/errors.js";
 import type { Request, Response, NextFunction } from "express";
@@ -19,6 +21,9 @@ async function main() {
   logger.info("Database connected");
 
   const app = express();
+
+  // Trust proxy headers from ngrok/reverse proxies (required for rate limiting)
+  app.set("trust proxy", 1);
 
   // --- Middleware ---
 
@@ -71,6 +76,8 @@ async function main() {
   // --- Start ---
 
   startScheduler();
+  startTelegramBot();
+  startDiscordBot();
 
   app.listen(config.port, () => {
     logger.info("Server started", {
@@ -85,6 +92,7 @@ async function main() {
     console.log(`  SMS:      POST http://localhost:${config.port}/sms/inbound`);
     console.log(`  Phone:    POST http://localhost:${config.port}/phone/webhook`);
     console.log(`  Health:   GET  http://localhost:${config.port}/health`);
+    console.log(`  Discord:  ${config.discord.botToken ? "Bot active" : "disabled"}`);
     console.log(`  DRY_RUN:  ${config.dryRun}`);
     console.log();
   });

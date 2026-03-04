@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { executeCommand, executeConfirmedAction } from "../executor/executor.js";
-import { resolveConfirmation } from "../executor/confirmations.js";
+import { resolveConfirmation, getLatestPendingConfirmation, resolveAllPending } from "../executor/confirmations.js";
 import { verifyTwilioSignature } from "../utils/security.js";
 import { logger } from "../utils/logger.js";
 import type { Request, Response } from "express";
@@ -26,22 +26,59 @@ smsRouter.post("/sms/inbound", verifyTwilioSignature, async (req: Request, res: 
   try {
     let replyText: string;
 
-    // Handle confirmation commands: "confirm <id>" or "deny <id>"
-    const confirmMatch = message.match(/^(confirm|deny)\s+([a-f0-9-]+)/i);
-    if (confirmMatch) {
-      const decision = confirmMatch[1].toLowerCase() as "confirm" | "deny";
-      const actionId = confirmMatch[2];
+    // Handle "confirm all" / "yes all" / "deny all"
+    const allConfirm = /^(yes|confirm)\s+all$/i.test(message);
+    const allDeny = /^(no|deny)\s+all$/i.test(message);
 
-      const action = await resolveConfirmation(actionId, decision);
-      if (!action) {
-        replyText = `No pending action found for ID: ${actionId.slice(0, 8)}`;
+    // Handle "confirm <id>" / "deny <id>"
+    const confirmMatch = message.match(/^(confirm|deny)\s+([a-f0-9-]+)/i);
+
+    // Handle bare "yes" / "no"
+    const bareConfirm = /^(yes|confirm|yep|yea|yeah|y)$/i.test(message);
+    const bareDeny = /^(no|deny|nope|nah|n)$/i.test(message);
+
+    if (allConfirm || allDeny) {
+      const decision = allConfirm ? "confirm" : "deny";
+      const actions = await resolveAllPending(decision);
+      if (!actions.length) {
+        replyText = "Nothing pending to confirm.";
       } else if (decision === "confirm") {
-        const result = await executeConfirmedAction(actionId);
-        replyText = result.status === "executed"
-          ? `Confirmed & executed: ${result.result?.summary ?? result.type}`
-          : `Confirmed but failed: ${result.error ?? "unknown error"}`;
+        const results = [];
+        for (const action of actions) {
+          const result = await executeConfirmedAction(action.id);
+          results.push(result.status === "executed"
+            ? (result.result?.summary ?? result.type)
+            : `${result.type} failed: ${result.error}`);
+        }
+        replyText = `Confirmed ${actions.length} action(s):\n${results.map(r => `- ${r}`).join("\n")}`;
       } else {
-        replyText = `Denied: ${action.type} (${actionId.slice(0, 8)})`;
+        replyText = `Denied ${actions.length} action(s).`;
+      }
+    } else if (confirmMatch || bareConfirm || bareDeny) {
+      let actionId: string | null = confirmMatch?.[2] ?? null;
+      const decision: "confirm" | "deny" = (confirmMatch
+        ? confirmMatch[1].toLowerCase() === "deny"
+        : bareDeny) ? "deny" : "confirm";
+
+      if (!actionId) {
+        const latest = await getLatestPendingConfirmation();
+        actionId = latest?.id ?? null;
+      }
+
+      if (!actionId) {
+        replyText = "Nothing pending to confirm.";
+      } else {
+        const action = await resolveConfirmation(actionId, decision);
+        if (!action) {
+          replyText = `No pending action found for ID: ${actionId.slice(0, 8)}`;
+        } else if (decision === "confirm") {
+          const result = await executeConfirmedAction(actionId);
+          replyText = result.status === "executed"
+            ? `Confirmed & executed: ${result.result?.summary ?? result.type}`
+            : `Confirmed but failed: ${result.error ?? "unknown error"}`;
+        } else {
+          replyText = `Denied: ${action.type} (${actionId.slice(0, 8)})`;
+        }
       }
     } else {
       // Normal command

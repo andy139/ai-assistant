@@ -35,6 +35,8 @@ export async function historyQuery(args: HistoryQueryArgs): Promise<ToolResult> 
         status: a.status,
       })),
     })),
-    summary: `Returned ${commands.length} command(s)`,
+    summary: commands.length
+      ? `${commands.length} recent command(s):\n${commands.map((c) => `- "${c.message.slice(0, 60)}" [${c.status}]`).join("\n")}`
+      : "No command history",
   };
 }

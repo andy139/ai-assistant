@@ -14,7 +14,9 @@ export async function smsReply(args: SmsReplyArgs): Promise<ToolResult> {
   try {
     const message = await client.messages.create({
       body: args.message,
-      from: config.twilio.phoneNumber,
+      ...(config.twilio.messagingServiceSid
+        ? { messagingServiceSid: config.twilio.messagingServiceSid }
+        : { from: config.twilio.phoneNumber }),
       to: args.to,
     });
 

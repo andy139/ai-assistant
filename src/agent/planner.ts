@@ -4,6 +4,7 @@ import { parseStrictJson } from "./jsonOnly.js";
 import { config } from "../config/index.js";
 import { logger } from "../utils/logger.js";
 import { PlannerError, ValidationError } from "../utils/errors.js";
+import type { ConversationTurn } from "./conversationHistory.js";
 
 export interface PlannerAction {
   type: string;
@@ -19,12 +20,12 @@ export interface PlanResult {
  * Takes a user message, calls Claude as a strict JSON planner,
  * and returns a validated list of actions.
  */
-export async function plan(userMessage: string): Promise<PlanResult> {
+export async function plan(userMessage: string, history: ConversationTurn[] = []): Promise<PlanResult> {
   const now = new Date().toISOString();
   const augmentedMessage = `[Current time: ${now}]\n\nUser command: ${userMessage}`;
 
   const systemPrompt = buildPlannerPrompt();
-  const rawResponse = await callClaude(systemPrompt, augmentedMessage);
+  const rawResponse = await callClaude(systemPrompt, augmentedMessage, history);
 
   const parsed = parseStrictJson(rawResponse);
 

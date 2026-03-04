@@ -2,6 +2,9 @@ import cron from "node-cron";
 import { db } from "../store/db.js";
 import { logger } from "../utils/logger.js";
 import { config } from "../config/index.js";
+import { telegramSendMessage } from "../telegram/bot.js";
+import { discordSendDM } from "../discord/bot.js";
+import twilio from "twilio";
 
 let task: cron.ScheduledTask | null = null;
 
@@ -62,7 +65,38 @@ async function checkReminders(): Promise<void> {
 
     logger.info("Reminder fired", { id: reminder.id, text: reminder.text });
 
-    // If Twilio is configured, we could send an SMS here.
-    // For V1, we just log it. The web UI shows fired reminders.
+    // Send notification
+    if (reminder.source === "telegram" && reminder.chatId) {
+      await telegramSendMessage(
+        Number(reminder.chatId),
+        `\u23F0 Reminder:\n${reminder.text}`,
+      ).catch((err) => {
+        logger.error("Failed to send reminder notification", {
+          id: reminder.id,
+          error: String(err),
+        });
+      });
+    } else if (reminder.source === "discord" && reminder.chatId) {
+      await discordSendDM(reminder.chatId, `⏰ Reminder: ${reminder.text}`).catch((err) => {
+        logger.error("Failed to send Discord reminder", {
+          id: reminder.id,
+          error: String(err),
+        });
+      });
+    } else if (reminder.source === "sms" && reminder.chatId && config.twilio.accountSid && config.twilio.authToken) {
+      const client = twilio(config.twilio.accountSid, config.twilio.authToken);
+      await client.messages.create({
+        to: reminder.chatId,
+        ...(config.twilio.messagingServiceSid
+          ? { messagingServiceSid: config.twilio.messagingServiceSid }
+          : { from: config.twilio.phoneNumber }),
+        body: `⏰ Reminder: ${reminder.text}`,
+      }).catch((err) => {
+        logger.error("Failed to send SMS reminder", {
+          id: reminder.id,
+          error: String(err),
+        });
+      });
+    }
   }
 }

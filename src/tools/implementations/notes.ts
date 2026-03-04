@@ -32,7 +32,9 @@ export async function notesSearch(args: NotesSearchArgs): Promise<ToolResult> {
       tag: n.tag,
       createdAt: n.createdAt.toISOString(),
     })),
-    summary: `Found ${notes.length} note(s) matching "${args.query}"`,
+    summary: notes.length
+      ? `Notes matching "${args.query}":\n\n${formatNotes(notes)}`
+      : `No notes matching "${args.query}"`,
   };
 }
 
@@ -51,6 +53,15 @@ export async function notesList(args: NotesListArgs): Promise<ToolResult> {
       tag: n.tag,
       createdAt: n.createdAt.toISOString(),
     })),
-    summary: `Found ${notes.length} note(s)${args.tag ? ` tagged [${args.tag}]` : ""}`,
+    summary: notes.length
+      ? `Notes:\n\n${formatNotes(notes)}`
+      : `No notes found${args.tag ? ` tagged [${args.tag}]` : ""}`,
   };
+}
+
+function formatNotes(notes: Array<{ content: string; tag: string | null }>): string {
+  return notes.map((n) => {
+    const tag = n.tag ? `\n   #${n.tag}` : "";
+    return `\uD83D\uDCDD ${n.content.slice(0, 150)}${tag}`;
+  }).join("\n\n");
 }
