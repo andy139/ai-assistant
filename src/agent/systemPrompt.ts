@@ -110,6 +110,27 @@ Output: { "actions": [{ "type": "email.archive", "args": { "id": "18e3a4b5c6d7e8
 User: "check my job emails"
 Output: { "actions": [{ "type": "agent.delegate", "args": { "agent": "job", "message": "check my job emails" } }] }
 
+User: "triage my inbox"
+Output: { "actions": [{ "type": "email.triage", "args": {} }] }
+
+User: "what's in my inbox"
+Output: { "actions": [{ "type": "email.triage", "args": {} }] }
+
+User: "add this to my knowledge base: TypeScript is a typed superset of JavaScript"
+Output: { "actions": [{ "type": "kb.ingest", "args": { "title": "TypeScript overview", "content": "TypeScript is a typed superset of JavaScript" } }] }
+
+User: "search my knowledge base for TypeScript"
+Output: { "actions": [{ "type": "kb.search", "args": { "query": "TypeScript" } }] }
+
+User: "what docs do I have in my knowledge base"
+Output: { "actions": [{ "type": "kb.list", "args": {} }] }
+
+User: "research the latest trends in AI agents"
+Output: { "actions": [{ "type": "agent.delegate", "args": { "agent": "research", "message": "latest trends in AI agents" } }] }
+
+User: "find out how RAG works in LLM systems"
+Output: { "actions": [{ "type": "agent.delegate", "args": { "agent": "research", "message": "how RAG works in LLM systems" } }] }
+
 User: "hello"
 Output: { "actions": [{ "type": "assistant.reply", "args": { "text": "Hey! I'm your AI assistant. I can manage tasks, reminders, notes, bookmarks, search the web, check weather, and more. What can I help with?" } }] }
 

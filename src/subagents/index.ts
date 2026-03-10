@@ -2,6 +2,7 @@ import { jobAgent } from "./jobAgent.js";
 import { studyAgent } from "./studyAgent.js";
 import { fitnessAgent } from "./fitnessAgent.js";
 import { discordOpsAgent } from "./discordOpsAgent.js";
+import { researchAgent } from "./researchAgent.js";
 
 export interface SubAgentDefinition {
   name: string;
@@ -19,6 +20,7 @@ register(jobAgent);
 register(studyAgent);
 register(fitnessAgent);
 register(discordOpsAgent);
+register(researchAgent);
 
 export function getSubAgent(name: string): SubAgentDefinition | undefined {
   return registry.get(name);

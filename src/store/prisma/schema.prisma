@@ -77,3 +77,24 @@ model Bookmark {
 
   @@index([tag])
 }
+
+model Document {
+  id        String          @id @default(uuid())
+  title     String
+  source    String          // "text" | "url"
+  content   String
+  chunks    DocumentChunk[]
+  createdAt DateTime        @default(now())
+}
+
+model DocumentChunk {
+  id         String   @id @default(uuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  text       String
+  tfJson     String   // JSON: Record<string, number> term frequencies
+  chunkIndex Int
+  createdAt  DateTime @default(now())
+
+  @@index([documentId])
+}

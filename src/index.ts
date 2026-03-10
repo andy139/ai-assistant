@@ -8,6 +8,7 @@ import { historyRouter } from "./api/historyRoutes.js";
 import { confirmRouter } from "./api/confirmRoutes.js";
 import { phoneRouter } from "./api/phoneRoutes.js";
 import { uiRouter } from "./ui/uiRoutes.js";
+import { kbRouter } from "./api/kbRoutes.js";
 import { startScheduler } from "./scheduler/scheduler.js";
 import { startTelegramBot } from "./telegram/bot.js";
 import { startDiscordBot } from "./discord/bot.js";
@@ -51,6 +52,7 @@ async function main() {
   app.use(phoneRouter);       // POST /phone/webhook
   app.use(historyRouter);     // GET /history
   app.use(confirmRouter);     // GET /confirm/pending, POST /confirm
+  app.use(kbRouter);          // POST /kb/upload, POST /kb/url, GET /kb/docs
 
   // Health check
   app.get("/health", (_req: Request, res: Response) => {
@@ -92,6 +94,9 @@ async function main() {
     console.log(`  SMS:      POST http://localhost:${config.port}/sms/inbound`);
     console.log(`  Phone:    POST http://localhost:${config.port}/phone/webhook`);
     console.log(`  Health:   GET  http://localhost:${config.port}/health`);
+    console.log(`  KB:       POST http://localhost:${config.port}/kb/upload  (file)`);
+    console.log(`            POST http://localhost:${config.port}/kb/url     (URL)`);
+    console.log(`            GET  http://localhost:${config.port}/kb/docs    (list)`);
     console.log(`  Discord:  ${config.discord.botToken ? "Bot active" : "disabled"}`);
     console.log(`  DRY_RUN:  ${config.dryRun}`);
     console.log();

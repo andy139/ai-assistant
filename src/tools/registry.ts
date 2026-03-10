@@ -12,7 +12,7 @@ import { briefingGetSchema } from "./schemas/briefing.js";
 import { webSearchSchema, webSummarizeSchema } from "./schemas/web.js";
 import { telegramReplySchema } from "./schemas/telegram.js";
 import { assistantReplySchema } from "./schemas/assistant.js";
-import { emailListSchema, emailReadSchema, emailSummarizeSchema, emailSendSchema, emailArchiveSchema } from "./schemas/email.js";
+import { emailListSchema, emailReadSchema, emailSummarizeSchema, emailSendSchema, emailArchiveSchema, emailTriageSchema } from "./schemas/email.js";
 import { tasksCreate, tasksList, tasksComplete, tasksDelete } from "./implementations/tasks.js";
 import { remindersCreate, remindersList, remindersDelete } from "./implementations/reminders.js";
 import { discordPost } from "./implementations/discord.js";
@@ -26,7 +26,9 @@ import { briefingGet } from "./implementations/briefing.js";
 import { webSearch, webSummarize } from "./implementations/web.js";
 import { telegramReply } from "./implementations/telegram.js";
 import { assistantReply } from "./implementations/assistant.js";
-import { emailList, emailRead, emailSummarize, emailSend, emailArchive } from "./implementations/email.js";
+import { emailList, emailRead, emailSummarize, emailSend, emailArchive, emailTriage } from "./implementations/email.js";
+import { kbIngestSchema, kbSearchSchema, kbListSchema } from "./schemas/kb.js";
+import { kbIngest, kbSearch, kbList } from "./implementations/kb.js";
 
 export interface ToolResult {
   ok: boolean;
@@ -299,6 +301,44 @@ register({
   confirmation: "soft",
   schema: emailArchiveSchema,
   execute: (args) => emailArchive(args as Parameters<typeof emailArchive>[0]),
+});
+
+register({
+  name: "email.triage",
+  description: "Triage unread inbox: classifies emails by category (interviews, opportunities, rejections, newsletters, action needed), auto-creates tasks for items needing follow-up",
+  permission: "write",
+  confirmation: "none",
+  schema: emailTriageSchema,
+  execute: (args) => emailTriage(args as Parameters<typeof emailTriage>[0]),
+});
+
+// --- Knowledge Base (RAG) tools ---
+
+register({
+  name: "kb.ingest",
+  description: "Ingest text into the knowledge base for semantic retrieval",
+  permission: "write",
+  confirmation: "soft",
+  schema: kbIngestSchema,
+  execute: (args) => kbIngest(args as Parameters<typeof kbIngest>[0]),
+});
+
+register({
+  name: "kb.search",
+  description: "Semantic search over the knowledge base using natural language",
+  permission: "read",
+  confirmation: "none",
+  schema: kbSearchSchema,
+  execute: (args) => kbSearch(args as Parameters<typeof kbSearch>[0]),
+});
+
+register({
+  name: "kb.list",
+  description: "List all documents ingested in the knowledge base",
+  permission: "read",
+  confirmation: "none",
+  schema: kbListSchema,
+  execute: (args) => kbList(args as Parameters<typeof kbList>[0]),
 });
 
 // --- Registry accessors ---

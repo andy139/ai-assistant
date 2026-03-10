@@ -7,6 +7,17 @@ import type { ToolResult } from "../registry.js";
 import type { PlannerAction } from "../../agent/planner.js";
 
 export async function agentDelegate(args: AgentDelegateArgs): Promise<ToolResult> {
+  // Research agent runs its own ReAct loop — not a simple LLM prompt
+  if (args.agent === "research") {
+    const { executeResearchAgent } = await import("../../subagents/researchAgent.js");
+    const plan = await executeResearchAgent(args.message);
+    return {
+      ok: true,
+      data: { delegatedActions: plan.actions as PlannerAction[] },
+      summary: `Research agent synthesized answer for: "${args.message}"`,
+    };
+  }
+
   const agent = getSubAgent(args.agent);
   if (!agent) {
     return { ok: false, data: null, summary: `Unknown agent: ${args.agent}` };

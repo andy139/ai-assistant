@@ -27,8 +27,13 @@ export const emailArchiveSchema = z.object({
   id: z.string().min(1),
 });
 
+export const emailTriageSchema = z.object({
+  maxResults: z.number().int().min(1).max(50).optional(),
+});
+
 export type EmailListArgs = z.infer<typeof emailListSchema>;
 export type EmailReadArgs = z.infer<typeof emailReadSchema>;
 export type EmailSummarizeArgs = z.infer<typeof emailSummarizeSchema>;
 export type EmailSendArgs = z.infer<typeof emailSendSchema>;
 export type EmailArchiveArgs = z.infer<typeof emailArchiveSchema>;
+export type EmailTriageArgs = z.infer<typeof emailTriageSchema>;

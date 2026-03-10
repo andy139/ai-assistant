@@ -83,6 +83,37 @@
     .empty { color: var(--muted); text-align: center; padding: 40px; font-size: 0.85rem; }
     .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* KB styles */
+    .kb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    @media (max-width: 600px) { .kb-grid { grid-template-columns: 1fr; } }
+    .kb-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .kb-panel h3 { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    .drop-zone {
+      border: 2px dashed var(--border); border-radius: 8px; padding: 32px 16px;
+      text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s;
+      color: var(--muted); font-size: 0.85rem;
+    }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(108,92,231,0.05); color: var(--text); }
+    .drop-zone input[type=file] { display: none; }
+    .drop-zone .drop-icon { font-size: 2rem; margin-bottom: 8px; }
+    .kb-field { width: 100%; padding: 8px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: inherit; font-size: 0.85rem; margin-bottom: 8px; }
+    .kb-field:focus { outline: none; border-color: var(--accent); }
+    .btn-sm { padding: 7px 14px; font-size: 0.8rem; }
+    .btn-danger { background: transparent; border: 1px solid var(--red); color: var(--red); font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-family: inherit; }
+    .btn-danger:hover { background: var(--red); color: #fff; }
+    .doc-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .doc-row:last-child { border-bottom: none; }
+    .doc-icon { font-size: 1.1rem; flex-shrink: 0; }
+    .doc-info { flex: 1; min-width: 0; }
+    .doc-title { font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .doc-meta { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .kb-toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 18px; font-size: 0.85rem; opacity: 0; transition: opacity 0.3s; pointer-events: none; max-width: 320px; }
+    .kb-toast.show { opacity: 1; }
+    .kb-toast.success { border-color: var(--green); color: var(--green); }
+    .kb-toast.error { border-color: var(--red); color: var(--red); }
+    .progress-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 10px; overflow: hidden; display: none; }
+    .progress-bar-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.3s; border-radius: 2px; }
   </style>
 </head>
 <body>
@@ -100,12 +131,53 @@
     <div class="tabs">
       <div class="tab active" data-tab="history" onclick="switchTab('history')">History</div>
       <div class="tab" data-tab="pending" onclick="switchTab('pending')">Pending</div>
-      <div class="tab" data-tab="reminders" onclick="switchTab('reminders')">Reminders</div>
+      <div class="tab" data-tab="kb" onclick="switchTab('kb')">Knowledge Base</div>
     </div>
 
     <div id="history" class="section active"></div>
     <div id="pending" class="section"></div>
-    <div id="reminders" class="section"></div>
+    <div id="kb" class="section">
+      <div class="kb-grid">
+
+        <!-- File upload panel -->
+        <div class="kb-panel">
+          <h3>Upload File</h3>
+          <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+            <input type="file" id="fileInput" accept=".txt,.md,.pdf" onchange="handleFileSelect(this.files)">
+            <div class="drop-icon">📄</div>
+            <div>Drop a file here or click to browse</div>
+            <div style="font-size:0.75rem;margin-top:4px;color:var(--muted)">.txt &nbsp; .md &nbsp; .pdf &nbsp; — max 10 MB</div>
+          </div>
+          <div class="progress-bar" id="uploadProgress">
+            <div class="progress-bar-fill" id="uploadProgressFill"></div>
+          </div>
+          <input class="kb-field" id="fileTitle" placeholder="Title (optional — defaults to filename)" style="margin-top:10px">
+          <button class="btn btn-primary btn-sm" id="uploadBtn" onclick="uploadFile()" disabled>Upload</button>
+        </div>
+
+        <!-- URL ingest panel -->
+        <div class="kb-panel">
+          <h3>Ingest URL</h3>
+          <input class="kb-field" id="urlInput" placeholder="https://docs.example.com/page">
+          <input class="kb-field" id="urlTitle" placeholder="Title (optional — defaults to domain)">
+          <button class="btn btn-primary btn-sm" id="urlBtn" onclick="ingestUrl()">Fetch &amp; Ingest</button>
+          <div style="margin-top:10px;font-size:0.75rem;color:var(--muted)">
+            Fetches the page, strips HTML, chunks and indexes the text.
+          </div>
+        </div>
+      </div>
+
+      <!-- Document list -->
+      <div class="kb-panel">
+        <h3 style="display:flex;justify-content:space-between;align-items:center">
+          <span>Documents</span>
+          <span id="docCount" style="font-size:0.75rem;color:var(--muted)"></span>
+        </h3>
+        <div id="docList"><div class="empty">No documents yet.</div></div>
+      </div>
+    </div>
+
+    <div class="kb-toast" id="toast"></div>
   </div>
 
   <script>
@@ -116,7 +188,7 @@
       document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === name));
       if (name === 'history') loadHistory();
       if (name === 'pending') loadPending();
-      if (name === 'reminders') loadHistory();
+      if (name === 'kb') loadDocs();
     }
 
     async function sendCommand() {
@@ -232,6 +304,188 @@
     document.getElementById('cmdInput').addEventListener('keydown', e => {
       if (e.key === 'Enter') sendCommand();
     });
+
+    document.getElementById('urlInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') ingestUrl();
+    });
+
+    // ── Drag and drop ──────────────────────────────────────────────────────────
+
+    let selectedFile = null;
+
+    const dropZone = document.getElementById('dropZone');
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      handleFileSelect(e.dataTransfer.files);
+    });
+
+    function handleFileSelect(files) {
+      if (!files || !files.length) return;
+      selectedFile = files[0];
+      dropZone.innerHTML = `
+        <div class="drop-icon">✅</div>
+        <div style="font-weight:600">${esc(selectedFile.name)}</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">${(selectedFile.size / 1024).toFixed(1)} KB — click to change</div>
+      `;
+      dropZone.onclick = () => document.getElementById('fileInput').click();
+      document.getElementById('uploadBtn').disabled = false;
+    }
+
+    // ── Upload file ────────────────────────────────────────────────────────────
+
+    async function uploadFile() {
+      if (!selectedFile) return;
+      const title = document.getElementById('fileTitle').value.trim();
+      const btn = document.getElementById('uploadBtn');
+      const progress = document.getElementById('uploadProgress');
+      const fill = document.getElementById('uploadProgressFill');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Uploading…';
+      progress.style.display = 'block';
+
+      // Animate progress bar (fake progress while waiting)
+      let pct = 0;
+      const ticker = setInterval(() => { pct = Math.min(pct + 8, 85); fill.style.width = pct + '%'; }, 200);
+
+      const form = new FormData();
+      form.append('file', selectedFile);
+      if (title) form.append('title', title);
+
+      try {
+        const res = await fetch('/kb/upload', { method: 'POST', body: form });
+        const data = await res.json();
+        clearInterval(ticker);
+        fill.style.width = '100%';
+
+        if (data.ok) {
+          toast(`✅ "${data.title}" ingested — ${data.chunkCount} chunks`, 'success');
+          resetUploadPanel();
+          loadDocs();
+        } else {
+          toast('❌ ' + (data.error || 'Upload failed'), 'error');
+        }
+      } catch (err) {
+        clearInterval(ticker);
+        toast('❌ ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Upload';
+        setTimeout(() => { progress.style.display = 'none'; fill.style.width = '0%'; }, 800);
+      }
+    }
+
+    function resetUploadPanel() {
+      selectedFile = null;
+      document.getElementById('fileTitle').value = '';
+      document.getElementById('uploadBtn').disabled = true;
+      document.getElementById('fileInput').value = '';
+      dropZone.innerHTML = `
+        <input type="file" id="fileInput" accept=".txt,.md,.pdf" onchange="handleFileSelect(this.files)">
+        <div class="drop-icon">📄</div>
+        <div>Drop a file here or click to browse</div>
+        <div style="font-size:0.75rem;margin-top:4px;color:var(--muted)">.txt &nbsp; .md &nbsp; .pdf &nbsp; — max 10 MB</div>
+      `;
+      dropZone.onclick = () => document.getElementById('fileInput').click();
+    }
+
+    // ── Ingest URL ─────────────────────────────────────────────────────────────
+
+    async function ingestUrl() {
+      const url = document.getElementById('urlInput').value.trim();
+      const title = document.getElementById('urlTitle').value.trim();
+      if (!url) { toast('Enter a URL first', 'error'); return; }
+
+      const btn = document.getElementById('urlBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Fetching…';
+
+      try {
+        const res = await fetch('/kb/url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, title: title || undefined }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          toast(`✅ "${data.title}" ingested — ${data.chunkCount} chunks`, 'success');
+          document.getElementById('urlInput').value = '';
+          document.getElementById('urlTitle').value = '';
+          loadDocs();
+        } else {
+          toast('❌ ' + (data.error || 'Failed'), 'error');
+        }
+      } catch (err) {
+        toast('❌ ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Fetch &amp; Ingest';
+      }
+    }
+
+    // ── Document list ──────────────────────────────────────────────────────────
+
+    async function loadDocs() {
+      const el = document.getElementById('docList');
+      const countEl = document.getElementById('docCount');
+      try {
+        const res = await fetch('/kb/docs');
+        const docs = await res.json();
+        countEl.textContent = docs.length ? `${docs.length} document${docs.length !== 1 ? 's' : ''}` : '';
+        if (!docs.length) {
+          el.innerHTML = '<div class="empty">No documents yet. Upload a file or paste a URL above.</div>';
+          return;
+        }
+        el.innerHTML = docs.map(d => `
+          <div class="doc-row">
+            <div class="doc-icon">${sourceIcon(d.source)}</div>
+            <div class="doc-info">
+              <div class="doc-title">${esc(d.title)}</div>
+              <div class="doc-meta">${d.chunks} chunk${d.chunks !== 1 ? 's' : ''} &middot; ${d.source} &middot; ${new Date(d.createdAt).toLocaleDateString()}</div>
+            </div>
+            <button class="btn-danger" onclick="deleteDoc('${d.id}', '${esc(d.title)}')">Delete</button>
+          </div>
+        `).join('');
+      } catch {
+        el.innerHTML = '<div class="empty">Failed to load documents</div>';
+      }
+    }
+
+    async function deleteDoc(id, title) {
+      if (!confirm(`Delete "${title}"?`)) return;
+      try {
+        const res = await fetch('/kb/docs/' + id, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.ok) {
+          toast('🗑️ Deleted', 'success');
+          loadDocs();
+        } else {
+          toast('❌ ' + (data.error || 'Delete failed'), 'error');
+        }
+      } catch (err) {
+        toast('❌ ' + err.message, 'error');
+      }
+    }
+
+    function sourceIcon(source) {
+      if (source === 'url') return '🌐';
+      if (source === 'file') return '📄';
+      return '📝';
+    }
+
+    // ── Toast ──────────────────────────────────────────────────────────────────
+
+    let toastTimer;
+    function toast(msg, type = 'success') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = `kb-toast show ${type}`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+    }
 
     loadHistory();
   </script>

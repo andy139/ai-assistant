@@ -5,6 +5,7 @@ import { config } from "../config/index.js";
 import { logger } from "../utils/logger.js";
 import { PlannerError, ValidationError } from "../utils/errors.js";
 import type { ConversationTurn } from "./conversationHistory.js";
+import { retrieveChunks, formatRagContext } from "../rag/retriever.js";
 
 export interface PlannerAction {
   type: string;
@@ -22,7 +23,18 @@ export interface PlanResult {
  */
 export async function plan(userMessage: string, history: ConversationTurn[] = []): Promise<PlanResult> {
   const now = new Date().toISOString();
-  const augmentedMessage = `[Current time: ${now}]\n\nUser command: ${userMessage}`;
+
+  // RAG: retrieve relevant knowledge base chunks and inject as context
+  let ragContext = "";
+  try {
+    const chunks = await retrieveChunks(userMessage, 3);
+    ragContext = formatRagContext(chunks);
+  } catch {
+    // KB may be empty or unavailable — silently skip
+  }
+
+  const contextBlock = ragContext ? `\n\n${ragContext}` : "";
+  const augmentedMessage = `[Current time: ${now}]${contextBlock}\n\nUser command: ${userMessage}`;
 
   const systemPrompt = buildPlannerPrompt();
   const rawResponse = await callClaude(systemPrompt, augmentedMessage, history);
